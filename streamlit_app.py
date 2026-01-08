@@ -1,46 +1,71 @@
 import streamlit as st
-import tensorflow as tf
-import numpy as np
-import json
-import cv2
+import requests
 from PIL import Image
 
-st.set_page_config(page_title="AI Food Calorie Estimator", layout="centered")
-st.title("🍎 AI Food Recognition & Calorie Estimator")
+# ---------------- CONFIG ----------------
+BACKEND_URL = "http://127.0.0.1:8000/predict-food"  # will change after backend deploy
 
-@st.cache_resource
-def load_model():
-    return tf.keras.models.load_model("backend/model/food_classifier")
+st.set_page_config(
+    page_title="AI Health Intelligence System",
+    page_icon="🥗",
+    layout="centered"
+)
 
-@st.cache_resource
-def load_classes():
-    with open("backend/model/class_indices.json", "r") as f:
-        return {int(v): k for k, v in json.load(f).items()}
+# ---------------- UI ----------------
+st.title("🥗 AI-Powered Health Intelligence System")
+st.markdown(
+    """
+    Upload a food image to **identify the food item** and  
+    **estimate calories** using a deep learning model.
+    """
+)
 
-model = load_model()
-class_map = load_classes()
+uploaded_file = st.file_uploader(
+    "Upload a food image (JPG / PNG)",
+    type=["jpg", "jpeg", "png"]
+)
 
-def preprocess(img):
-    img = np.array(img)
-    img = cv2.resize(img, (224, 224))
-    img = img / 255.0
-    return np.expand_dims(img, axis=0)
+# ---------------- PREDICTION ----------------
+if uploaded_file is not None:
+    image = Image.open(uploaded_file).convert("RGB")
+    st.image(image, caption="Uploaded Image", use_column_width=True)
 
-uploaded = st.file_uploader("Upload a food image", type=["jpg", "jpeg", "png"])
-grams = st.number_input("Enter food weight (grams)", min_value=1, value=100)
+    if st.button("🔍 Predict Food & Calories"):
+        with st.spinner("Analyzing image..."):
+            try:
+                response = requests.post(
+                    BACKEND_URL,
+                    files={
+                        "file": (
+                            uploaded_file.name,
+                            uploaded_file.getvalue(),
+                            uploaded_file.type
+                        )
+                    },
+                    timeout=60
+                )
 
-if uploaded and st.button("Predict"):
-    image = Image.open(uploaded).convert("RGB")
-    x = preprocess(image)
+                if response.status_code == 200:
+                    result = response.json()
 
-    preds = model.predict(x)
-    idx = int(np.argmax(preds))
-    conf = float(np.max(preds))
+                    st.subheader("✅ Prediction Result")
+                    st.write(f"**Food Item:** {result['food']}")
+                    st.write(f"**Confidence:** {result['confidence']:.2f}")
+                    st.write(f"**Estimated Calories:** {result['estimated_calories']} kcal")
 
-    food = class_map.get(idx, "Unknown")
-    calories = round(0.96 * grams, 2)  # your logic
+                else:
+                    st.error("Backend error. Please try again later.")
 
-    st.success("Prediction Successful ✅")
-    st.write(f"**Food:** {food}")
-    st.write(f"**Confidence:** {conf:.2f}")
-    st.write(f"**Estimated Calories:** {calories} kcal")
+            except Exception:
+                st.warning(
+                    "⚠ Backend is not reachable.\n\n"
+                    "This frontend is deployed successfully.\n"
+                    "Backend deployment will be connected next."
+                )
+
+# ---------------- FOOTER ----------------
+st.markdown("---")
+st.caption(
+    "Streamlit Frontend • FastAPI Backend • TensorFlow Model\n"
+    "Deployed architecture-ready AI system"
+)
