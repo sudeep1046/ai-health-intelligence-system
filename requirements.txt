@@ -10,3 +10,4 @@ uvicorn
 streamlit
 matplotlib
 seaborn
+opencv-python-headless
