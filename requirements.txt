@@ -1,3 +1,12 @@
+# Frontend (Streamlit)
 streamlit
 requests
 pillow
+
+# Backend (FastAPI + ML)
+fastapi
+uvicorn
+tensorflow-cpu
+numpy
+python-multipart
+opencv-python-headless
