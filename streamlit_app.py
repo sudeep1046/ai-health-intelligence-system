@@ -3,7 +3,7 @@ import requests
 from PIL import Image
 
 # ---------------- CONFIG ----------------
-BACKEND_URL = "https://ai-health-backend.onrender.com/predict-food"
+BACKEND_URL = "https://ai-health-intelligence-system.onrender.com"
   # will change after backend deploy
 
 st.set_page_config(
